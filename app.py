@@ -4,7 +4,7 @@ import tempfile
 import numpy as np
 import os
 from camera import CameraHandler
-from detector import ObjectDetector, RoboflowWrapper
+from detector import ObjectDetector
 from gap_logic import ParkingGapAnalyzer
 
 st.set_page_config(page_title="Parking Slot Detector", layout="wide")
@@ -51,24 +51,7 @@ for root, dirs, files in os.walk("runs"):
 if not model_files:
     model_files = ["yolov8n.pt"]
 
-# Add Roboflow option
-model_options = ["Roboflow API"] + model_files
-selected_model_option = st.sidebar.selectbox("Select Model Source", model_options)
-
-rf_api_key = ""
-rf_workspace = ""
-rf_project = ""
-rf_version = 1
-
-if selected_model_option == "Roboflow API":
-    st.sidebar.markdown("---")
-    rf_api_key = st.sidebar.text_input("Roboflow API Key", type="password")
-    rf_workspace = st.sidebar.text_input("Workspace Name")
-    rf_project = st.sidebar.text_input("Project Name")
-    rf_version = st.sidebar.number_input("Version", min_value=1, value=1)
-    st.sidebar.markdown("---")
-else:
-    selected_model = selected_model_option
+selected_model = st.sidebar.selectbox("Select Model Source", model_files)
 
 conf_threshold = st.sidebar.slider("Confidence Threshold", 0.1, 1.0, 0.25, 0.05)
 min_gap_width = st.sidebar.slider("Min Gap Width (Pixels)", 10, 500, 100, 10, help="Minimum width in pixels required for a parking spot. Calibrate this based on your camera view.")
@@ -82,13 +65,7 @@ st_status = st.empty()
 if start_button and source is not None:
     # Initialize Modules
     try:
-        if selected_model_option == "Roboflow API":
-            if not rf_api_key or not rf_project:
-                st.error("Please provide API Key and Project Name")
-                st.stop()
-            detector = RoboflowWrapper(api_key=rf_api_key, workspace=rf_workspace, project=rf_project, version=rf_version)
-        else:
-            detector = ObjectDetector(model_path=selected_model, conf_threshold=conf_threshold)
+        detector = ObjectDetector(model_path=selected_model, conf_threshold=conf_threshold)
 
         gap_analyzer = ParkingGapAnalyzer(min_gap_width=min_gap_width)
         camera = CameraHandler(source)
